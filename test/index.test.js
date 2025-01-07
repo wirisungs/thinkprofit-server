@@ -1,32 +1,28 @@
-const express = require('express');
-const app = express();
-const port = process.env.PORT || 3000;
-const bodyParser = require('body-parser');
-const EventEmitter = require('events');
+const chai = require('chai');
+const chaiHttp = require('chai-http');
+chai.use(chaiHttp);
+const app = require('../src/index');
 
-app.get('/', (req, res) => {
-  res.send('Hello World!');
+describe('Express App', () => {
+  it('should return Hello World! on GET /', (done) => {
+    chai.request(app)
+      .get('/')
+      .end((err, res) => {
+        expect(res).to.have.status(200);
+        expect(res.text).to.equal('Hello World!');
+        done();
+      });
+  });
+
+  // Additional test cases can be added here
+
+  it('should return 404 on GET /unknown', (done) => {
+    chai.request(app)
+      .get('/unknown')
+      .end((err, res) => {
+        expect(res).to.have.status(404);
+        done();
+      });
+  });
+
 });
-
-//parse application/x-www-form-urlencoded
-app.use(bodyParser.json());
-
-//logging middleware
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.url}`);
-  next();
-});
-
-
-//error-handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'Something went wrong!' });
-});
-
-//event emitter
-EventEmitter.defaultMaxListeners = 20;
-
-app.listen(port, () => {
-  console.log(`ThinkProfit server is running on port http://localhost:${port}`);
-})
