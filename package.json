@@ -5,7 +5,8 @@
   "scripts": {
     "test": "mocha",
     "dev": "nodemon src/index.js",
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "build": "echo \"Error: no build specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
