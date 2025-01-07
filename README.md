@@ -35,5 +35,34 @@ To start the server in development mode with hot-reloading:
 
 ```sh
 npm run dev
+```
 
+The server will be running at http://localhost:3000
 
+## Testing
+
+To run the test:
+
+```sh
+npm test
+```
+
+## CI/CD
+
+This project uses GitHub Actions for CI/CD. The workflow is defined in main.yml. It runs on every push and pull request to the main branch, and performs the following steps:
+
+1. Checkout the code
+2. Setup Node.js
+3. Installs dependencies
+4. Run tests
+5. Builds the application
+6. Deploys the application (deployment commands need to be added)
+
+## Enviroment Variables
+
+The follwing environment variables are used in this project
+- PORT: The port on which the server will run (default is 3000)
+
+## License
+
+This project in licensed under the ISC License
