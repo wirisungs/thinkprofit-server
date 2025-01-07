@@ -1,0 +1,20 @@
+# Thư mục chứa các gói phụ thuộc
+node_modules/
+
+# Thư mục chứa các tệp xây dựng
+dist/
+build/
+
+# Tệp cấu hình của IDE
+.vscode/
+.idea/
+
+# Tệp nhật ký
+*.log
+
+# Tệp môi trường
+.env
+
+# Thư mục hệ thống
+.DS_Store
+Thumbs.db
