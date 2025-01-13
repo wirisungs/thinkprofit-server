@@ -4,16 +4,25 @@ on:
   push:
     branches:
       - main
+      - develop
+      - staging
   pull_request:
     branches:
       - main
+      - develop
+      - staging
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        environment: [development, staging, production]
+
     steps:
-      - uses: actions/checkout@v2
+      - name: Check out code
+        uses: actions/checkout@v2
 
       - name: Set up Node.js
         uses: actions/setup-node@v2
@@ -23,13 +32,28 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      # - name: Run tests
-      #   run: npm test
+      # - name: Lint code
+      #   run: npm run lint
 
-      # - name: Build application
-      #   run: npm run build
+      - name: Run tests
+        run: npm test
 
-      - name: Deploy to production
+      - name: Build application
+        run: npm run build
+
+      - name: Deploy to ${{ matrix.environment }}
+        # env:
+        #   SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        #   HOST: ${{ secrets['HOST_' + matrix.environment] }}
+        #   USER: ${{ secrets.USER }}
+        #   DEPLOY_PATH: ${{ secrets['DEPLOY_PATH_' + matrix.environment] }}
         run: |
-          # Thêm lệnh triển khai của bạn ở đây
-          echo "Đang triển khai ứng dụng..."
+          # echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          # chmod 600 ~/.ssh/id_rsa
+          # ssh-keyscan $HOST >> ~/.ssh/known_hosts
+          # ssh -i ~/.ssh/id_rsa $USER@$HOST << 'EOF'
+          #   cd $DEPLOY_PATH
+          #   git pull origin ${{ matrix.environment }}
+          #   npm install --production
+          #   pm2 restart all
+          # EOF
