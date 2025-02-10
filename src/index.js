@@ -3,6 +3,12 @@ const bodyParser = require('body-parser');
 const EventEmitter = require('events');
 const { firestore, auth } = require('./config/Firebase.config.db');
 
+// Import routes
+const transactionsRouter = require('./routes/Transactions.route');
+const savingGoalsRouter = require('./routes/SavingGoals.route');
+const categoriesRouter = require('./routes/Categories.route');
+const budgetsRouter = require('./routes/Budgets.route');
+
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -14,6 +20,12 @@ app.use((req, res, next) => {
   console.log(`${req.method} ${req.url}`);
   next();
 });
+
+// Configure routes
+app.use('/api/transactions', transactionsRouter);
+app.use('/api/saving-goals', savingGoalsRouter);
+app.use('/api/categories', categoriesRouter);
+app.use('/api/budgets', budgetsRouter);
 
 // Firebase Firestore test route
 app.get('/test-firebase', async (req, res) => {

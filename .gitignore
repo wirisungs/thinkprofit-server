@@ -21,3 +21,6 @@ Thumbs.db
 
 # Thư mục cấu hình
 src/config/
+
+# env
+.env
