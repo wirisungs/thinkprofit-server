@@ -1,11 +1,11 @@
 const express = require('express');
-const { getBudgets, addBudgets, updateBudgets, deleteBudgets } = require('../controllers/Budgets.controller');
+const { getBudgets, addBudget, updateBudget, deleteBudget } = require('../controllers/Budgets.controller');
 
 const router = express.Router();
 
 router.get('/', getBudgets);
-router.post('/add/', addBudgets);
-router.put('/:id', updateBudgets);
-router.delete('/delete/:id', deleteBudgets);
+router.post('/add/', addBudget);
+router.put('/:id', updateBudget);
+router.delete('/delete/:id', deleteBudget);
 
 module.exports = router;

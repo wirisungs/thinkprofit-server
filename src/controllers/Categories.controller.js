@@ -1,4 +1,4 @@
-import { database } from '../config/Firebase.config.db.js';
+const { database } = require('../config/Firebase.config.db.js');
 
 const generateId = () => {
   return 'CG' + Math.floor(100000 + Math.random() * 900000).toString();
@@ -107,4 +107,4 @@ const deleteCategory = async (req, res) => {
   }
 }
 
-export { getCategories, addCategory, updateCategory, deleteCategory };
+module.exports = { getCategories, addCategory, updateCategory, deleteCategory };

@@ -1,7 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const EventEmitter = require('events');
-const { firestore, auth } = require('./config/Firebase.config.db');
+const { firestore } = require('./config/Firebase.config.db');
 
 // Import routes
 const transactionsRouter = require('./routes/Transactions.route');
@@ -54,7 +54,7 @@ app.get('/', (req, res) => {
 
 // Start the server
 app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+  console.log(`ThinkProfit Server is running on http://localhost:${port}`);
 });
 
 module.exports = app;
