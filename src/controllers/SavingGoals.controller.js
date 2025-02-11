@@ -1,4 +1,4 @@
-const { database } = require('../config/Firebase.config.db');
+const { db } = require('../config/Firebase.config.db');
 const admin = require('firebase-admin');
 
 const generateId = () => {
@@ -8,11 +8,15 @@ const generateId = () => {
 // 🔹 Lấy danh sách mục tiêu tiết kiệm
 const getSavingGoals = async (req, res) => {
   try {
-    const snapshot = await database.ref('savingGoals').once('value');
-    if (!snapshot.exists()) {
+    const snapshot = await db.collection('savingGoals').get();
+    if (snapshot.empty) {
       return res.status(404).json({ message: 'No saving goals found' });
     }
-    res.status(200).json(snapshot.val());
+    const goals = {};
+    snapshot.forEach(doc => {
+      goals[doc.id] = doc.data();
+    });
+    res.status(200).json(goals);
   } catch (error) {
     console.error('Error fetching saving goals:', error);
     res.status(500).json({ message: 'Error fetching saving goals' });
@@ -27,15 +31,19 @@ const getSavingGoalsByUserId = async (req, res) => {
       return res.status(400).json({ message: 'User ID is required' });
     }
 
-    const snapshot = await database.ref('savingGoals')
-      .orderByChild('userId')
-      .equalTo(userId)
-      .once('value');
+    const snapshot = await db.collection('savingGoals')
+      .where('userId', '==', userId)
+      .get();
 
-    if (!snapshot.exists()) {
+    if (snapshot.empty) {
       return res.status(404).json({ message: 'No saving goals found for this user' });
     }
-    res.status(200).json(snapshot.val());
+
+    const goals = {};
+    snapshot.forEach(doc => {
+      goals[doc.id] = doc.data();
+    });
+    res.status(200).json(goals);
   } catch (error) {
     console.error('Error fetching user saving goals:', error);
     res.status(500).json({ message: 'Error fetching user saving goals', error: error.message });
@@ -71,22 +79,20 @@ const addSavingGoal = async (req, res) => {
       savingAmount,
       targetAmount,
       savingDescription: savingDescription || '',
-      createdAt: admin.database.ServerValue.TIMESTAMP,
-      updatedAt: admin.database.ServerValue.TIMESTAMP,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       userId,
       savingStatus: savingStatus || 'active',
       goalType: goalType || 'short-term',
       dueDate: dueDate || null
     };
 
-    await database.ref(`savingGoals/${savingId}`).set(newSavingGoal);
-
-    // Fetch the created record to get the actual timestamps
-    const createdGoal = (await database.ref(`savingGoals/${savingId}`).once('value')).val();
+    await db.collection('savingGoals').doc(savingId).set(newSavingGoal);
+    const createdGoal = await db.collection('savingGoals').doc(savingId).get();
 
     res.status(201).json({
       message: 'Saving goal added successfully!',
-      data: createdGoal
+      data: createdGoal.data()
     });
   } catch (error) {
     console.error('Error adding saving goal:', error);
@@ -105,31 +111,29 @@ const updateSavingGoal = async (req, res) => {
       return res.status(400).json({ message: 'Goal type must be either short-term or long-term' });
     }
 
-    const snapshot = await database.ref(`savingGoals/${id}`).once('value');
-    if (!snapshot.exists()) {
+    const goalRef = await db.collection('savingGoals').doc(id).get();
+    if (!goalRef.exists) {
       return res.status(404).json({ message: 'Saving goal not found' });
     }
 
-    const updatedSavingGoal = {
-      savingName,
-      savingAmount,
-      targetAmount,
-      savingDescription,
-      updatedAt: admin.database.ServerValue.TIMESTAMP,
-      userId,
-      savingStatus,
-      goalType: goalType || 'short-term',
-      dueDate: dueDate || null
+    const updates = {
+      ...(savingName && { savingName }),
+      ...(savingAmount && { savingAmount }),
+      ...(targetAmount && { targetAmount }),
+      ...(savingDescription && { savingDescription }),
+      ...(userId && { userId }),
+      ...(savingStatus && { savingStatus }),
+      ...(goalType && { goalType }),
+      ...(dueDate && { dueDate }),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
     };
 
-    await database.ref(`savingGoals/${id}`).update(updatedSavingGoal);
-
-    // Fetch the updated record to get the actual timestamp
-    const updatedGoal = (await database.ref(`savingGoals/${id}`).once('value')).val();
+    await db.collection('savingGoals').doc(id).update(updates);
+    const updatedGoal = await db.collection('savingGoals').doc(id).get();
 
     res.status(200).json({
       message: 'Saving goal updated successfully!',
-      data: updatedGoal
+      data: updatedGoal.data()
     });
   } catch (error) {
     console.error('Error updating saving goal:', error);
@@ -143,12 +147,12 @@ const deleteSavingGoal = async (req, res) => {
     const { id } = req.params;
 
     // Kiểm tra mục tiêu có tồn tại không
-    const snapshot = await database.ref(`savingGoals/${id}`).once('value');
-    if (!snapshot.exists()) {
+    const goalRef = await db.collection('savingGoals').doc(id).get();
+    if (!goalRef.exists) {
       return res.status(404).json({ message: 'Saving goal not found' });
     }
 
-    await database.ref(`savingGoals/${id}`).remove();
+    await db.collection('savingGoals').doc(id).delete();
 
     res.status(200).json({ message: 'Saving goal deleted successfully!' });
   } catch (error) {

@@ -1,4 +1,5 @@
-const { database } = require('../config/Firebase.config.db');
+const { db } = require('../config/Firebase.config.db');
+const admin = require('firebase-admin');
 
 const generateId = () => {
   return 'BG' + Math.floor(100000 + Math.random() * 900000).toString();
@@ -8,16 +9,21 @@ const generateId = () => {
 const getBudgets = async (req, res) => {
   try {
     const { userId } = req.query;
-    const snapshot = await database.ref('budgets').once('value');
-    if (!snapshot.exists()) {
+    let query = db.collection('budgets');
+
+    if (userId) {
+      query = query.where('userId', '==', userId);
+    }
+
+    const snapshot = await query.get();
+    if (snapshot.empty) {
       return res.status(404).json({ message: 'No budgets found' });
     }
 
-    const budgets = snapshot.val();
-    if (userId) {
-      const filteredBudgets = Object.values(budgets).filter(budget => budget.userId === userId);
-      return res.status(200).json(filteredBudgets);
-    }
+    const budgets = {};
+    snapshot.forEach(doc => {
+      budgets[doc.id] = doc.data();
+    });
     res.status(200).json(budgets);
   } catch (error) {
     console.error('Error fetching budgets:', error);
@@ -38,19 +44,21 @@ const addBudget = async (req, res) => {
     }
 
     // Check for overlapping budgets in the same category
-    const snapshot = await database.ref('budgets').once('value');
-    if (snapshot.exists()) {
-      const budgets = Object.values(snapshot.val());
-      const overlapping = budgets.some(budget =>
-        budget.categoryId === categoryId &&
-        budget.userId === userId &&
-        ((new Date(startDate) >= new Date(budget.startDate) && new Date(startDate) <= new Date(budget.endDate)) ||
-         (new Date(endDate) >= new Date(budget.startDate) && new Date(endDate) <= new Date(budget.endDate)))
-      );
+    const overlappingBudgets = await db.collection('budgets')
+      .where('categoryId', '==', categoryId)
+      .where('userId', '==', userId)
+      .get();
 
-      if (overlapping) {
-        return res.status(400).json({ message: 'A budget already exists for this category during the specified period' });
-      }
+    const isOverlapping = overlappingBudgets.docs.some(doc => {
+      const budget = doc.data();
+      return (
+        (new Date(startDate) >= new Date(budget.startDate) && new Date(startDate) <= new Date(budget.endDate)) ||
+        (new Date(endDate) >= new Date(budget.startDate) && new Date(endDate) <= new Date(budget.endDate))
+      );
+    });
+
+    if (isOverlapping) {
+      return res.status(400).json({ message: 'A budget already exists for this category during the specified period' });
     }
 
     const budgetId = generateId();
@@ -61,13 +69,13 @@ const addBudget = async (req, res) => {
       remainingAmount: budgetAmount,
       startDate,
       endDate,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       categoryId,
       budgetStatus: budgetStatus || 'active'
     };
 
-    await database.ref(`budgets/${budgetId}`).set(newBudget);
+    await db.collection('budgets').doc(budgetId).set(newBudget);
 
     res.status(201).json({ message: 'Budget added successfully!', id: budgetId });
   } catch (error) {
@@ -82,13 +90,12 @@ const updateBudget = async (req, res) => {
     const { id } = req.params;
     const { budgetAmount, startDate, endDate, categoryId, budgetStatus } = req.body;
 
-    // Kiểm tra xem budget có tồn tại không
-    const snapshot = await database.ref(`budgets/${id}`).once('value');
-    if (!snapshot.exists()) {
+    const budgetRef = await db.collection('budgets').doc(id).get();
+    if (!budgetRef.exists) {
       return res.status(404).json({ message: 'Budget not found' });
     }
 
-    const currentBudget = snapshot.val();
+    const currentBudget = budgetRef.data();
     const newBudgetAmount = budgetAmount || currentBudget.budgetAmount;
 
     // Calculate new remaining amount proportionally
@@ -96,17 +103,17 @@ const updateBudget = async (req, res) => {
       ? (currentBudget.remainingAmount / currentBudget.budgetAmount) * newBudgetAmount
       : currentBudget.remainingAmount;
 
-    const updatedBudget = {
+    const updates = {
       budgetAmount: newBudgetAmount,
       remainingAmount,
-      startDate: startDate || currentBudget.startDate,
-      endDate: endDate || currentBudget.endDate,
-      updatedAt: new Date().toISOString(),
-      categoryId: categoryId || currentBudget.categoryId,
-      budgetStatus: budgetStatus || currentBudget.budgetStatus
+      ...(startDate && { startDate }),
+      ...(endDate && { endDate }),
+      ...(categoryId && { categoryId }),
+      ...(budgetStatus && { budgetStatus }),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
     };
 
-    await database.ref(`budgets/${id}`).update(updatedBudget);
+    await db.collection('budgets').doc(id).update(updates);
 
     res.status(200).json({ message: 'Budget updated successfully!' });
   } catch (error) {
@@ -120,13 +127,12 @@ const deleteBudget = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Kiểm tra xem budget có tồn tại không
-    const snapshot = await database.ref(`budgets/${id}`).once('value');
-    if (!snapshot.exists()) {
+    const budgetRef = await db.collection('budgets').doc(id).get();
+    if (!budgetRef.exists) {
       return res.status(404).json({ message: 'Budget not found' });
     }
 
-    await database.ref(`budgets/${id}`).remove();
+    await db.collection('budgets').doc(id).delete();
 
     res.status(200).json({ message: 'Budget deleted successfully!' });
   } catch (error) {

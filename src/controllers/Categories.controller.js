@@ -1,4 +1,5 @@
-const { database } = require('../config/Firebase.config.db.js');
+const { db } = require('../config/Firebase.config.db.js');
+const admin = require('firebase-admin');
 
 const generateId = () => {
   return 'CG' + Math.floor(100000 + Math.random() * 900000).toString();
@@ -6,12 +7,12 @@ const generateId = () => {
 
 const getCategories = async (req, res) => {
   try {
-    const categories = await database.ref('categories').once('value');
-    const categoriesData = categories.val();
-    if (!categoriesData) {
-      return res.status(200).json({});
-    }
-    res.status(200).json(categoriesData);
+    const categoriesSnapshot = await db.collection('categories').get();
+    const categories = {};
+    categoriesSnapshot.forEach(doc => {
+      categories[doc.id] = doc.data();
+    });
+    res.status(200).json(categories);
   } catch (error) {
     res.status(500).json({ success: false, message: 'Error fetching categories', error: error.message });
   }
@@ -21,7 +22,6 @@ const addCategory = async (req, res) => {
   try {
     const { cateName, cateDescription, type } = req.body;
 
-    // Validate required fields
     if (!cateName || !type) {
       return res.status(400).json({ success: false, message: 'Category name and type are required' });
     }
@@ -30,28 +30,27 @@ const addCategory = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid type. Must be "Sinh hoạt" or "Cá nhân".' });
     }
 
-    // Check for existing category with same name
-    const existingCategories = await database.ref('categories')
-      .orderByChild('cateName')
-      .equalTo(cateName)
-      .once('value');
+    const existingCategory = await db.collection('categories')
+      .where('cateName', '==', cateName)
+      .get();
 
-    if (existingCategories.val()) {
+    if (!existingCategory.empty) {
       return res.status(400).json({ success: false, message: 'Category with this name already exists' });
     }
 
-    const newCategory = await database.ref('categories').push({
-      cateId: generateId(),
+    const cateId = generateId();
+    await db.collection('categories').doc(cateId).set({
+      cateId,
       cateName,
       cateDescription: cateDescription || '',
       type,
-      createdAt: new Date().toISOString()
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
     res.status(201).json({
       success: true,
       message: 'Category added successfully!',
-      data: { id: newCategory.key }
+      data: { id: cateId }
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Error adding category', error: error.message });
@@ -63,9 +62,8 @@ const updateCategory = async (req, res) => {
     const { id } = req.params;
     const { cateName, cateDescription, type } = req.body;
 
-    // Check if category exists
-    const categoryRef = await database.ref(`categories/${id}`).once('value');
-    if (!categoryRef.exists()) {
+    const categoryRef = await db.collection('categories').doc(id).get();
+    if (!categoryRef.exists) {
       return res.status(404).json({ success: false, message: 'Category not found' });
     }
 
@@ -77,11 +75,11 @@ const updateCategory = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid type. Must be "Sinh hoạt" or "Cá nhân".' });
     }
 
-    await database.ref(`categories/${id}`).update({
+    await db.collection('categories').doc(id).update({
       cateName,
       cateDescription: cateDescription || '',
       type,
-      updatedAt: new Date().toISOString()
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
     res.status(200).json({ success: true, message: 'Category updated successfully!' });
@@ -93,14 +91,12 @@ const updateCategory = async (req, res) => {
 const deleteCategory = async (req, res) => {
   try {
     const { id } = req.params;
-
-    // Check if category exists
-    const categoryRef = await database.ref(`categories/${id}`).once('value');
-    if (!categoryRef.exists()) {
+    const categoryRef = await db.collection('categories').doc(id).get();
+    if (!categoryRef.exists) {
       return res.status(404).json({ success: false, message: 'Category not found' });
     }
 
-    await database.ref(`categories/${id}`).remove();
+    await db.collection('categories').doc(id).delete();
     res.status(200).json({ success: true, message: 'Category deleted successfully!' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Error deleting category', error: error.message });

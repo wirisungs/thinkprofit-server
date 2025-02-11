@@ -1,7 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const EventEmitter = require('events');
-const { firestore } = require('./config/Firebase.config.db');
+const { admin, database } = require('./config/Firebase.config.db');
 
 // Import routes
 const transactionsRouter = require('./routes/Transactions.route');
@@ -27,15 +27,19 @@ app.use('/api/saving-goals', savingGoalsRouter);
 app.use('/api/categories', categoriesRouter);
 app.use('/api/budgets', budgetsRouter);
 
-// Firebase Firestore test route
-app.get('/test-firebase', async (req, res) => {
-  try {
-    const testCollection = await firestore.collection('testCollection').get();
-    const docs = testCollection.docs.map((doc) => doc.data());
-    res.status(200).json({ message: 'Firebase connected successfully!', docs });
-  } catch (error) {
-    res.status(500).json({ message: 'Error connecting to Firebase', error });
-  }
+// Firebase Realtime Database test route
+app.get('/test-firebase', (req, res) => {
+  const ref = database.ref('/');
+  ref.set({
+    test: 'Hello Firebase!'
+  })
+  .then(() => {
+    res.status(200).json({ message: 'Firebase write successful!' });
+  })
+  .catch((error) => {
+    console.error('Firebase connection error:', error);
+    res.status(500).json({ message: 'Error connecting to Firebase', error: error.message });
+  });
 });
 
 // Error-handling middleware
