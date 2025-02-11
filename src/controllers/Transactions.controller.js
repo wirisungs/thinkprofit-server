@@ -1,4 +1,5 @@
 const { database } = require('../config/Firebase.config.db');
+const admin = require('firebase-admin');
 
 const generateId = () => {
   return 'TR' + Math.floor(100000 + Math.random() * 900000).toString();
@@ -16,23 +17,25 @@ const getTransactions = async (req, res) => {
 const addTransaction = async (req, res) => {
   try {
     const { title, amount, userId, categoryId, type, date } = req.body;
+    const transactionId = generateId();
 
     if (!['Chi tiêu', 'Thu nhập'].includes(type)) {
       return res.status(400).json({ message: 'Invalid transaction type' });
     }
 
-    const newTransaction = await database.ref('transactions').push({
+    await database.ref(`transactions/${transactionId}`).set({
+      id: transactionId,
       title,
       amount: Number(amount),
       userId,
       categoryId,
       type,
       date,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      createdAt: admin.database.ServerValue.TIMESTAMP,
+      updatedAt: admin.database.ServerValue.TIMESTAMP
     });
 
-    res.status(201).json({ message: 'Transaction added successfully!', id: newTransaction.key });
+    res.status(201).json({ message: 'Transaction added successfully!', id: transactionId });
   } catch (error) {
     res.status(500).json({ message: 'Error adding transaction', error });
   }
@@ -54,7 +57,7 @@ const updateTransaction = async (req, res) => {
       ...(categoryId && { categoryId }),
       ...(type && { type }),
       ...(date && { date }),
-      updatedAt: new Date().toISOString()
+      updatedAt: admin.database.ServerValue.TIMESTAMP
     };
 
     await database.ref(`transactions/${id}`).update(updates);

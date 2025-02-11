@@ -1,4 +1,5 @@
 const { database } = require('../config/Firebase.config.db');
+const admin = require('firebase-admin');
 
 const generateId = () => {
   return 'SG' + Math.floor(100000 + Math.random() * 900000).toString();
@@ -70,8 +71,8 @@ const addSavingGoal = async (req, res) => {
       savingAmount,
       targetAmount,
       savingDescription: savingDescription || '',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: admin.database.ServerValue.TIMESTAMP,
+      updatedAt: admin.database.ServerValue.TIMESTAMP,
       userId,
       savingStatus: savingStatus || 'active',
       goalType: goalType || 'short-term',
@@ -80,9 +81,12 @@ const addSavingGoal = async (req, res) => {
 
     await database.ref(`savingGoals/${savingId}`).set(newSavingGoal);
 
+    // Fetch the created record to get the actual timestamps
+    const createdGoal = (await database.ref(`savingGoals/${savingId}`).once('value')).val();
+
     res.status(201).json({
       message: 'Saving goal added successfully!',
-      data: newSavingGoal
+      data: createdGoal
     });
   } catch (error) {
     console.error('Error adding saving goal:', error);
@@ -101,7 +105,6 @@ const updateSavingGoal = async (req, res) => {
       return res.status(400).json({ message: 'Goal type must be either short-term or long-term' });
     }
 
-    // Kiểm tra mục tiêu có tồn tại không
     const snapshot = await database.ref(`savingGoals/${id}`).once('value');
     if (!snapshot.exists()) {
       return res.status(404).json({ message: 'Saving goal not found' });
@@ -112,7 +115,7 @@ const updateSavingGoal = async (req, res) => {
       savingAmount,
       targetAmount,
       savingDescription,
-      updatedAt: new Date().toISOString(),
+      updatedAt: admin.database.ServerValue.TIMESTAMP,
       userId,
       savingStatus,
       goalType: goalType || 'short-term',
@@ -121,7 +124,13 @@ const updateSavingGoal = async (req, res) => {
 
     await database.ref(`savingGoals/${id}`).update(updatedSavingGoal);
 
-    res.status(200).json({ message: 'Saving goal updated successfully!' });
+    // Fetch the updated record to get the actual timestamp
+    const updatedGoal = (await database.ref(`savingGoals/${id}`).once('value')).val();
+
+    res.status(200).json({
+      message: 'Saving goal updated successfully!',
+      data: updatedGoal
+    });
   } catch (error) {
     console.error('Error updating saving goal:', error);
     res.status(500).json({ message: 'Error updating saving goal' });
