@@ -74,7 +74,7 @@ const addSavingGoal = async (req, res) => {
 
     const savingId = generateId();
     const newSavingGoal = {
-      savingId,
+      id: savingId,
       savingName,
       savingAmount,
       targetAmount,

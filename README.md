@@ -1,6 +1,6 @@
 # ThinkProfit Server
 
-This is the server-side application for ThinkProfit, built with Node.js and Express.
+Backend service for ThinkProfit, a SaaS platform for business insights and financial analytics.
 
 ## Table of Contents
 
@@ -15,7 +15,7 @@ This is the server-side application for ThinkProfit, built with Node.js and Expr
 
 1. Clone the repository:
     ```sh
-    git clone https://github.com/wirisungs/thinkprofit-server.git
+    git clone https://github.com/thinkprofit/thinkprofit-server.git
     cd thinkprofit-server
     ```
 
@@ -24,45 +24,61 @@ This is the server-side application for ThinkProfit, built with Node.js and Expr
     npm install
     ```
 
-3. Create a [.env](http://_vscodecontentref_/0) file in the root directory and add the following:
-    ```env
-    PORT=3000
-    ```
+3. Create a .env file in the root directory and add the required environment variables (see Environment Variables section).
 
 ## Usage
 
-To start the server in development mode with hot-reloading:
+Start the development server:
 
 ```sh
 npm run dev
 ```
 
-The server will be running at http://localhost:3000
+For production:
+
+```sh
+npm run build
+npm start
+```
 
 ## Testing
 
-To run the test:
+Run unit tests:
 
 ```sh
-npm test
+npm run test
+```
+
+Run e2e tests:
+
+```sh
+npm run test:e2e
 ```
 
 ## CI/CD
 
-This project uses GitHub Actions for CI/CD. The workflow is defined in main.yml. It runs on every push and pull request to the main branch, and performs the following steps:
+Our CI/CD pipeline uses GitHub Actions with the following stages:
+- Build validation
+- Unit & E2E testing
+- Code quality checks
+- Automated deployment to staging/production
 
-1. Checkout the code
-2. Setup Node.js
-3. Installs dependencies
-4. Run tests
-5. Builds the application
-6. Deploys the application (deployment commands need to be added)
+## Environment Variables
 
-## Enviroment Variables
-
-The follwing environment variables are used in this project
-- PORT: The port on which the server will run (default is 3000)
+Required environment variables:
+- `PORT` - Server port (default: 3000)
+- `FIREBASE_TYPE` - Firebase service account type
+- `FIREBASE_PROJECT_ID` - Firebase project identifier
+- `FIREBASE_PRIVATE_KEY_ID` - Firebase private key ID
+- `FIREBASE_PRIVATE_KEY` - Firebase private key (in PEM format)
+- `FIREBASE_CLIENT_EMAIL` - Firebase service account email
+- `FIREBASE_CLIENT_ID` - Firebase client ID
+- `FIREBASE_AUTH_URI` - Firebase authentication URI
+- `FIREBASE_TOKEN_URI` - Firebase token URI
+- `FIREBASE_AUTH_PROVIDER_X509_CERT_URL` - Firebase auth provider certificate URL
+- `FIREBASE_CLIENT_X509_CERT_URL` - Firebase client certificate URL
+- `FIREBASE_DATABASE_URL` - Firebase Realtime Database URL
 
 ## License
 
-This project in licensed under the ISC License
+Copyright © 2023 ThinkProfit. All rights reserved.

@@ -8,12 +8,8 @@ const generateId = () => {
 // 🔹 Lấy tất cả ngân sách
 const getBudgets = async (req, res) => {
   try {
-    const { userId } = req.query;
-    let query = db.collection('budgets');
-
-    if (userId) {
-      query = query.where('userId', '==', userId);
-    }
+    const userId = req.user.uid; // Get userId from authenticated request
+    const query = db.collection('budgets').where('userId', '==', userId);
 
     const snapshot = await query.get();
     if (snapshot.empty) {
@@ -34,8 +30,10 @@ const getBudgets = async (req, res) => {
 // 🔹 Thêm ngân sách mới
 const addBudget = async (req, res) => {
   try {
-    const { userId, budgetAmount, startDate, endDate, categoryId, budgetStatus } = req.body;
-    if (!userId || !budgetAmount || !startDate || !endDate || !categoryId) {
+    const userId = req.user.uid; // Get userId from authenticated request
+    const { budgetAmount, startDate, endDate, categoryId, budgetStatus } = req.body;
+
+    if (!budgetAmount || !startDate || !endDate || !categoryId) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
@@ -63,7 +61,7 @@ const addBudget = async (req, res) => {
 
     const budgetId = generateId();
     const newBudget = {
-      budgetId,
+      id: budgetId,
       userId,
       budgetAmount,
       remainingAmount: budgetAmount,
@@ -87,13 +85,21 @@ const addBudget = async (req, res) => {
 // 🔹 Cập nhật ngân sách
 const updateBudget = async (req, res) => {
   try {
+    const userId = req.user.uid; // Get userId from authenticated request
     const { id } = req.params;
-    const { budgetAmount, startDate, endDate, categoryId, budgetStatus } = req.body;
 
     const budgetRef = await db.collection('budgets').doc(id).get();
     if (!budgetRef.exists) {
       return res.status(404).json({ message: 'Budget not found' });
     }
+
+    // Verify budget belongs to user
+    const budget = budgetRef.data();
+    if (budget.userId !== userId) {
+      return res.status(403).json({ message: 'Unauthorized to modify this budget' });
+    }
+
+    const { budgetAmount, startDate, endDate, categoryId, budgetStatus } = req.body;
 
     const currentBudget = budgetRef.data();
     const newBudgetAmount = budgetAmount || currentBudget.budgetAmount;
@@ -125,11 +131,18 @@ const updateBudget = async (req, res) => {
 // 🔹 Xóa ngân sách
 const deleteBudget = async (req, res) => {
   try {
+    const userId = req.user.uid; // Get userId from authenticated request
     const { id } = req.params;
 
     const budgetRef = await db.collection('budgets').doc(id).get();
     if (!budgetRef.exists) {
       return res.status(404).json({ message: 'Budget not found' });
+    }
+
+    // Verify budget belongs to user
+    const budget = budgetRef.data();
+    if (budget.userId !== userId) {
+      return res.status(403).json({ message: 'Unauthorized to delete this budget' });
     }
 
     await db.collection('budgets').doc(id).delete();
