@@ -7,7 +7,11 @@ const generateId = () => {
 
 const getCategories = async (req, res) => {
   try {
-    const categoriesSnapshot = await db.collection('categories').get();
+    const userId = req.user.uid; // Assuming you have user auth middleware
+    const categoriesSnapshot = await db.collection('categories')
+      .where('userId', '==', userId)
+      .get();
+
     const categories = {};
     categoriesSnapshot.forEach(doc => {
       categories[doc.id] = doc.data();
@@ -21,6 +25,7 @@ const getCategories = async (req, res) => {
 const addCategory = async (req, res) => {
   try {
     const { cateName, cateDescription, type } = req.body;
+    const userId = req.user.uid; // Assuming you have user auth middleware
 
     if (!cateName || !type) {
       return res.status(400).json({ success: false, message: 'Category name and type are required' });
@@ -32,6 +37,7 @@ const addCategory = async (req, res) => {
 
     const existingCategory = await db.collection('categories')
       .where('cateName', '==', cateName)
+      .where('userId', '==', userId)
       .get();
 
     if (!existingCategory.empty) {
@@ -40,7 +46,8 @@ const addCategory = async (req, res) => {
 
     const cateId = generateId();
     await db.collection('categories').doc(cateId).set({
-      cateId,
+      id: cateId,
+      userId,
       cateName,
       cateDescription: cateDescription || '',
       type,

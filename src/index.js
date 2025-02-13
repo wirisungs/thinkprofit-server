@@ -1,6 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const EventEmitter = require('events');
+const myEmitter = new EventEmitter();
 const { admin, database } = require('./config/Firebase.config.db');
 
 // Import routes
@@ -8,6 +9,7 @@ const transactionsRouter = require('./routes/Transactions.route');
 const savingGoalsRouter = require('./routes/SavingGoals.route');
 const categoriesRouter = require('./routes/Categories.route');
 const budgetsRouter = require('./routes/Budgets.route');
+const authRouter = require('./routes/Auth.route');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -22,6 +24,7 @@ app.use((req, res, next) => {
 });
 
 // Configure routes
+app.use('/api/auth', authRouter);
 app.use('/api/transactions', transactionsRouter);
 app.use('/api/saving-goals', savingGoalsRouter);
 app.use('/api/categories', categoriesRouter);
@@ -49,7 +52,12 @@ app.use((err, req, res, next) => {
 });
 
 // Event emitter
-EventEmitter.defaultMaxListeners = 20;
+myEmitter.defaultMaxListeners = 10;
+// Xóa listener cũ trước khi thêm mới
+myEmitter.removeAllListeners("exit");
+myEmitter.on("exit", () => {
+  console.log("Exit event triggered!");
+});
 
 // Root route
 app.get('/', (req, res) => {
