@@ -1,9 +1,11 @@
 const { db, admin } = require('../config/Firebase.config.db');
 
+// 🎲 Tạo ID ngẫu nhiên cho giao dịch với tiền tố 'TR'
 const generateId = () => {
   return 'TR' + Math.floor(100000 + Math.random() * 900000).toString();
 };
 
+// 📋 Lấy tất cả các giao dịch từ database
 const getTransactions = async (req, res) => {
   try {
     const transactionsSnapshot = await db.collection('transactions').get();
@@ -17,6 +19,7 @@ const getTransactions = async (req, res) => {
   }
 }
 
+// ➕ Thêm một giao dịch mới vào database
 const addTransaction = async (req, res) => {
   try {
     const { title, amount, userId, categoryId, type, date } = req.body;
@@ -44,6 +47,7 @@ const addTransaction = async (req, res) => {
   }
 }
 
+// 🔄 Cập nhật thông tin của một giao dịch dựa trên ID
 const updateTransaction = async (req, res) => {
   try {
     const { id } = req.params;
@@ -70,6 +74,7 @@ const updateTransaction = async (req, res) => {
   }
 }
 
+// 🗑️ Xóa một giao dịch dựa trên ID
 const deleteTransaction = async (req, res) => {
   try {
     const { id } = req.params;
@@ -80,6 +85,7 @@ const deleteTransaction = async (req, res) => {
   }
 }
 
+// 🧪 Thêm các giao dịch mẫu vào database để test
 const addSampleTransactions = async (req, res) => {
   try {
     console.log('Starting to add sample transactions...');
@@ -158,6 +164,7 @@ const addSampleTransactions = async (req, res) => {
   }
 }
 
+// 📦 Export các hàm để sử dụng trong routes
 module.exports = {
   getTransactions,
   addTransaction,

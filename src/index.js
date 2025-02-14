@@ -3,6 +3,8 @@ const bodyParser = require('body-parser');
 const EventEmitter = require('events');
 const myEmitter = new EventEmitter();
 const { admin, database } = require('./config/Firebase.config.db');
+require('dotenv').config();
+
 
 // Import routes
 const transactionsRouter = require('./routes/Transactions.route');

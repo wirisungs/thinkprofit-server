@@ -1,6 +1,7 @@
 const { db } = require('../config/Firebase.config.db');
 const admin = require('firebase-admin');
 
+// 🔑 Tạo ID ngẫu nhiên cho người dùng
 const generateId = () => {
   return 'UID' + Math.floor(100000 + Math.random() * 900000).toString();
 };
@@ -14,7 +15,7 @@ const registerUser = async (req, res) => {
 
     const userId = generateId();
 
-    // Create user with Firebase Auth
+    // 👤 Tạo người dùng mới với Firebase Auth
     const userRecord = await admin.auth().createUser({
       uid: userId,
       email: userEmail,
@@ -22,7 +23,7 @@ const registerUser = async (req, res) => {
       displayName: userName
     });
 
-    // Store additional user data in Firestore
+    // 💾 Lưu thông tin bổ sung vào Firestore
     await db.collection('users').doc(userId).set({
       userName,
       userEmail,
@@ -40,7 +41,7 @@ const registerUser = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error registering user:', error);
+    console.error('Error registering usser:', error);
 
     switch (error.code) {
       case 'auth/email-already-exists':
@@ -52,8 +53,8 @@ const registerUser = async (req, res) => {
       case 'auth/invalid-display-name':
         return res.status(400).json({ message: 'Invalid username format' });
       default:
-        // Log detailed error for debugging
-        console.error('Detailed error:', {
+        // 🐛 Ghi log chi tiết để gỡ lỗi
+        console.error('Error detail:', {
           code: error.code,
           message: error.message,
           stack: error.stack
@@ -73,9 +74,9 @@ const loginUser = async (req, res) => {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
-    // Note: Server-side login is not typically needed with Firebase Auth
-    // Client should use Firebase Auth client SDK for authentication
-    // This endpoint can be used to fetch additional user data after client-side auth
+    // 📝 Lưu ý: Đăng nhập phía máy chủ thường không cần thiết với Firebase Auth
+    // 🔒 Client nên sử dụng Firebase Auth SDK để xác thực
+    // 📌 Endpoint này có thể được sử dụng để lấy thêm dữ liệu người dùng sau khi xác thực phía client
 
     const userRecord = await admin.auth().getUserByEmail(userEmail);
     const userData = await db.collection('users').doc(userRecord.uid).get();
@@ -90,7 +91,7 @@ const loginUser = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error retrieving user:', error);
+    console.error('❌ Error when fetch user:', error);
     if (error.code === 'auth/user-not-found') {
       return res.status(404).json({ message: 'User not found' });
     }
