@@ -20,7 +20,7 @@ build/
 Thumbs.db
 
 # Thư mục cấu hình
-src/config/
+firebaseServices.json
 
 # env
 .env
