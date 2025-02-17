@@ -67,6 +67,8 @@ const registerUser = async (req, res) => {
   }
 }
 
+// 🔑 Đăng nhập người dùng
+// Lưu ý 1: Không cần thiết lắm tại vì phần login sẽ nằm ở bên Flutter là chính
 const loginUser = async (req, res) => {
   try {
     const { userEmail, userPassword } = req.body;
@@ -74,9 +76,9 @@ const loginUser = async (req, res) => {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
-    // 📝 Lưu ý: Đăng nhập phía máy chủ thường không cần thiết với Firebase Auth
+    // 📝 Lưu ý 2: Đăng nhập phía máy chủ thường không cần thiết với Firebase Auth
     // 🔒 Client nên sử dụng Firebase Auth SDK để xác thực
-    // 📌 Endpoint này có thể được sử dụng để lấy thêm dữ liệu người dùng sau khi xác thực phía client
+    // 📌 Endpoint này có thể được sử dụng để lấy dữ liệu người dùng mà không cần phải thông qua Firebase Auth SDK
 
     const userRecord = await admin.auth().getUserByEmail(userEmail);
     const userData = await db.collection('users').doc(userRecord.uid).get();

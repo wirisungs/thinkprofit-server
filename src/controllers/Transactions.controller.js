@@ -144,11 +144,11 @@ const addSampleTransactions = async (req, res) => {
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
       };
 
-      batch.set(docRef, docData);  // Changed to use batch variable
+      batch.set(docRef, docData);
     }
 
     console.log('Committing batch...');
-    await batch.commit();  // Changed to use batch variable
+    await batch.commit();  
     console.log('Batch committed successfully');
 
     res.status(201).json({

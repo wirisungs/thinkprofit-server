@@ -1,13 +1,15 @@
 const { db } = require('../config/Firebase.config.db.js');
 const admin = require('firebase-admin');
 
+// 🎲 Tạo ID ngẫu nhiên cho danh mục
 const generateId = () => {
   return 'CG' + Math.floor(100000 + Math.random() * 900000).toString();
 };
 
+// 📋 Lấy danh sách tất cả danh mục của người dùng
 const getCategories = async (req, res) => {
   try {
-    const userId = req.user.uid; // Assuming you have user auth middleware
+    const userId = req.user.uid;
     const categoriesSnapshot = await db.collection('categories')
       .where('userId', '==', userId)
       .get();
@@ -22,10 +24,15 @@ const getCategories = async (req, res) => {
   }
 }
 
+// ➕ Thêm danh mục mới
+// 🔍 Kiểm tra:
+// - Tên danh mục và loại danh mục không được trống
+// - Loại danh mục phải là "Sinh hoạt" hoặc "Cá nhân"
+// - Tên danh mục không được trùng lặp
 const addCategory = async (req, res) => {
   try {
     const { cateName, cateDescription, type } = req.body;
-    const userId = req.user.uid; // Assuming you have user auth middleware
+    const userId = req.user.uid;
 
     if (!cateName || !type) {
       return res.status(400).json({ success: false, message: 'Category name and type are required' });
@@ -64,6 +71,11 @@ const addCategory = async (req, res) => {
   }
 }
 
+// 🔄 Cập nhật thông tin danh mục
+// 🔍 Kiểm tra:
+// - Danh mục phải tồn tại
+// - Tên và loại danh mục không được trống
+// - Loại danh mục phải hợp lệ
 const updateCategory = async (req, res) => {
   try {
     const { id } = req.params;
@@ -95,6 +107,8 @@ const updateCategory = async (req, res) => {
   }
 }
 
+// 🗑️ Xóa danh mục
+// 🔍 Kiểm tra danh mục tồn tại trước khi xóa
 const deleteCategory = async (req, res) => {
   try {
     const { id } = req.params;

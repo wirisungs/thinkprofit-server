@@ -8,7 +8,21 @@ const generateId = () => {
 // 🔹 Lấy danh sách mục tiêu tiết kiệm
 const getSavingGoals = async (req, res) => {
   try {
-    const snapshot = await db.collection('savingGoals').get();
+    // Verify authentication
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    const userId = decodedToken.uid;
+
+    // Only fetch goals for authenticated user
+    const snapshot = await db.collection('savingGoals')
+      .where('userId', '==', userId)
+      .get();
+
     if (snapshot.empty) {
       return res.status(404).json({ message: 'No saving goals found' });
     }
@@ -26,9 +40,20 @@ const getSavingGoals = async (req, res) => {
 // 🔹 Lấy danh sách mục tiêu tiết kiệm theo user ID
 const getSavingGoalsByUserId = async (req, res) => {
   try {
+    // Verify authentication
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    const authenticatedUserId = decodedToken.uid;
     const { userId } = req.params;
-    if (!userId) {
-      return res.status(400).json({ message: 'User ID is required' });
+
+    // Only allow users to view their own goals
+    if (authenticatedUserId !== userId) {
+      return res.status(403).json({ message: 'Unauthorized access' });
     }
 
     const snapshot = await db.collection('savingGoals')
@@ -53,9 +78,19 @@ const getSavingGoalsByUserId = async (req, res) => {
 // 🔹 Thêm mục tiêu tiết kiệm mới
 const addSavingGoal = async (req, res) => {
   try {
-    const { savingName, savingAmount, targetAmount, savingDescription, userId, savingStatus, goalType, dueDate } = req.body;
+    // Verify authentication
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
 
-    // Enhanced input validation
+    const token = authHeader.split(' ')[1];
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    const userId = decodedToken.uid;
+
+    const { savingName, savingAmount, targetAmount, savingDescription, savingStatus, goalType, dueDate } = req.body;
+
+    // Use authenticated userId instead of from request body
     if (!savingName?.trim()) {
       return res.status(400).json({ message: 'Saving name is required' });
     }
@@ -64,9 +99,6 @@ const addSavingGoal = async (req, res) => {
     }
     if (!Number.isFinite(Number(targetAmount)) || targetAmount <= 0) {
       return res.status(400).json({ message: 'Invalid target amount' });
-    }
-    if (!userId?.trim()) {
-      return res.status(400).json({ message: 'User ID is required' });
     }
     if (goalType && !['short-term', 'long-term'].includes(goalType)) {
       return res.status(400).json({ message: 'Goal type must be either short-term or long-term' });
@@ -81,7 +113,7 @@ const addSavingGoal = async (req, res) => {
       savingDescription: savingDescription || '',
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      userId,
+      userId, // Use authenticated userId
       savingStatus: savingStatus || 'active',
       goalType: goalType || 'short-term',
       dueDate: dueDate || null
@@ -103,8 +135,18 @@ const addSavingGoal = async (req, res) => {
 // 🔹 Cập nhật mục tiêu tiết kiệm
 const updateSavingGoal = async (req, res) => {
   try {
+    // Verify authentication
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    const userId = decodedToken.uid;
+
     const { id } = req.params;
-    const { savingName, savingAmount, targetAmount, savingDescription, userId, savingStatus, goalType, dueDate } = req.body;
+    const { savingName, savingAmount, targetAmount, savingDescription, savingStatus, goalType, dueDate } = req.body;
 
     // Validate goal type
     if (goalType && !['short-term', 'long-term'].includes(goalType)) {
@@ -116,19 +158,20 @@ const updateSavingGoal = async (req, res) => {
       return res.status(404).json({ message: 'Saving goal not found' });
     }
 
-    const updates = {
-      ...(savingName && { savingName }),
-      ...(savingAmount && { savingAmount }),
-      ...(targetAmount && { targetAmount }),
-      ...(savingDescription && { savingDescription }),
-      ...(userId && { userId }),
-      ...(savingStatus && { savingStatus }),
-      ...(goalType && { goalType }),
-      ...(dueDate && { dueDate }),
+    // Check if the goal belongs to the authenticated user
+    if (goalRef.data().userId !== userId) {
+      return res.status(403).json({ message: 'Unauthorized access' });
+    }
+
+    // Remove userId from updates to prevent ownership change
+    const { userId: _, ...updates } = req.body;
+
+    const updatesWithTimestamp = {
+      ...updates,
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     };
 
-    await db.collection('savingGoals').doc(id).update(updates);
+    await db.collection('savingGoals').doc(id).update(updatesWithTimestamp);
     const updatedGoal = await db.collection('savingGoals').doc(id).get();
 
     res.status(200).json({
@@ -144,12 +187,27 @@ const updateSavingGoal = async (req, res) => {
 // 🔹 Xóa mục tiêu tiết kiệm
 const deleteSavingGoal = async (req, res) => {
   try {
+    // Verify authentication
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    const userId = decodedToken.uid;
+
     const { id } = req.params;
 
     // Kiểm tra mục tiêu có tồn tại không
     const goalRef = await db.collection('savingGoals').doc(id).get();
     if (!goalRef.exists) {
       return res.status(404).json({ message: 'Saving goal not found' });
+    }
+
+    // Check if the goal belongs to the authenticated user
+    if (goalRef.data().userId !== userId) {
+      return res.status(403).json({ message: 'Unauthorized access' });
     }
 
     await db.collection('savingGoals').doc(id).delete();

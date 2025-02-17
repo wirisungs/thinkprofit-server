@@ -38,22 +38,18 @@ jobs:
       # - name: Run tests
       #   run: npm test
 
-      # - name: Build application
-      #   run: npm run build
+      - name: Build application
+        run: npm run build
 
-      - name: Deploy to ${{ matrix.environment }}
-        # env:
-        #   SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-        #   HOST: ${{ secrets['HOST_' + matrix.environment] }}
-        #   USER: ${{ secrets.USER }}
-        #   DEPLOY_PATH: ${{ secrets['DEPLOY_PATH_' + matrix.environment] }}
-        run: |
-          # echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-          # chmod 600 ~/.ssh/id_rsa
-          # ssh-keyscan $HOST >> ~/.ssh/known_hosts
-          # ssh -i ~/.ssh/id_rsa $USER@$HOST << 'EOF'
-          #   cd $DEPLOY_PATH
-          #   git pull origin ${{ matrix.environment }}
-          #   npm install --production
-          #   pm2 restart all
-          # EOF
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v0.1.2
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd thinkprofit-server
+            git pull origin main
+            npm install --production
+            pm2 restart thinkprofit-server
