@@ -41,15 +41,3 @@ jobs:
       - name: Build application
         run: npm run build
 
-
-      - name: Deploy to EC2
-        uses: appleboy/ssh-action@v0.1.2
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            cd thinkprofit-server
-            git pull origin main
-            npm install --production
-            pm2 restart thinkprofit-server
