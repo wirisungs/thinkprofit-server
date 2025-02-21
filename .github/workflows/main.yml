@@ -29,6 +29,11 @@ jobs:
         with:
           node-version: '16'
 
+      - name: Create Firebase config
+        run: echo ${{ secrets.FIREBASE_CONFIG }} > firebaseServices.json
+        env:
+          FIREBASE_CONFIG: ${{ secrets.FIREBASE_CONFIG }}
+
       - name: Install dependencies
         run: npm install
 
@@ -40,4 +45,3 @@ jobs:
 
       - name: Build application
         run: npm run build
-
