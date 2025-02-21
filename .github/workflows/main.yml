@@ -30,7 +30,7 @@ jobs:
           node-version: '16'
 
       - name: Create Firebase config
-        run: echo ${{ secrets.FIREBASE_CONFIG }} > firebaseServices.json
+        run: printf '%s' "$FIREBASE_CONFIG" > src/config/firebaseServices.json 
         env:
           FIREBASE_CONFIG: ${{ secrets.FIREBASE_CONFIG }}
 
