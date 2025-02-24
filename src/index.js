@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const EventEmitter = require('events');
 const myEmitter = new EventEmitter();
 const { admin, database } = require('./config/Firebase.config.db');
+const { NODE_ENV, PORT, isDevelopment } = require('./config/Environment.config');
 require('dotenv').config();
 
 
@@ -67,8 +68,11 @@ app.get('/', (req, res) => {
 });
 
 // Start the server
-app.listen(port, () => {
-  console.log(`ThinkProfit Server is running on http://localhost:${port}`);
+app.listen(PORT, () => {
+  console.log(`Server running in ${NODE_ENV} mode on port ${PORT}`);
+  if (isDevelopment) {
+    console.log('Development features enabled');
+  }
 });
 
 module.exports = app;

@@ -33,6 +33,15 @@ const addCategory = async (req, res) => {
   try {
     const { cateName, cateDescription, type } = req.body;
     const userId = req.user.uid;
+    const userRole = req.user.role || 'FREE';
+
+    // Check if user is premium
+    if (userRole !== 'PREMIUM') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only premium users can create custom categories'
+      });
+    }
 
     if (!cateName || !type) {
       return res.status(400).json({ success: false, message: 'Category name and type are required' });
@@ -80,6 +89,15 @@ const updateCategory = async (req, res) => {
   try {
     const { id } = req.params;
     const { cateName, cateDescription, type } = req.body;
+    const userRole = req.user.role || 'FREE';
+
+    // Check if user is premium
+    if (userRole !== 'PREMIUM') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only premium users can update categories'
+      });
+    }
 
     const categoryRef = await db.collection('categories').doc(id).get();
     if (!categoryRef.exists) {
@@ -112,6 +130,16 @@ const updateCategory = async (req, res) => {
 const deleteCategory = async (req, res) => {
   try {
     const { id } = req.params;
+    const userRole = req.user.role || 'FREE';
+
+    // Check if user is premium
+    if (userRole !== 'PREMIUM') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only premium users can delete categories'
+      });
+    }
+
     const categoryRef = await db.collection('categories').doc(id).get();
     if (!categoryRef.exists) {
       return res.status(404).json({ success: false, message: 'Category not found' });

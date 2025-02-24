@@ -23,10 +23,14 @@ const registerUser = async (req, res) => {
       displayName: userName
     });
 
+    // Tự động gán role FREE cho người dùng mới
+    await admin.auth().setCustomUserClaims(userId, { role: 'FREE' });
+
     // 💾 Lưu thông tin bổ sung vào Firestore
     await db.collection('users').doc(userId).set({
       userName,
       userEmail,
+      userRole: 'FREE', // Mặc định role là FREE
       userBalance: 0,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
@@ -37,7 +41,8 @@ const registerUser = async (req, res) => {
       data: {
         uid: userId,
         email: userRecord.email,
-        displayName: userRecord.displayName
+        displayName: userRecord.displayName,
+        role: 'FREE'
       }
     });
   } catch (error) {
@@ -83,12 +88,17 @@ const loginUser = async (req, res) => {
     const userRecord = await admin.auth().getUserByEmail(userEmail);
     const userData = await db.collection('users').doc(userRecord.uid).get();
 
+    // Lấy custom claims để kiểm tra role
+    const customClaims = await admin.auth().getUser(userRecord.uid);
+    const userRole = customClaims.customClaims?.role || 'FREE';
+
     res.status(200).json({
       message: 'User logged in successfully',
       data: {
         uid: userRecord.uid,
         email: userRecord.email,
         displayName: userRecord.displayName,
+        role: userRole,
         ...userData.data()
       }
     });
@@ -101,7 +111,32 @@ const loginUser = async (req, res) => {
   }
 }
 
+// Thêm hàm mới để nâng cấp tài khoản lên Premium
+const upgradeToPremium = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Cập nhật custom claims
+    await admin.auth().setCustomUserClaims(userId, { role: 'PREMIUM' });
+
+    // Cập nhật thông tin trong Firestore
+    await db.collection('users').doc(userId).update({
+      userRole: 'PREMIUM',
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    res.status(200).json({
+      message: 'User upgraded to Premium successfully',
+      data: { userId, role: 'PREMIUM' }
+    });
+  } catch (error) {
+    console.error('Error upgrading user:', error);
+    res.status(500).json({ message: 'Error upgrading user role' });
+  }
+}
+
 module.exports = {
   registerUser,
-  loginUser
+  loginUser,
+  upgradeToPremium
 };
